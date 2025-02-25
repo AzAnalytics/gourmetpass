@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "322460520275",
+    "project_id": "gourmet-pass",
+    "storage_bucket": "gourmet-pass.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:322460520275:android:1555afd0f446913f5f1ba6",
+        "android_client_info": {
+          "package_name": "com.azanalytics.gourmetpass"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC8_C_h6QA7w4f0rIBNyyu5rFyBFUDmpiY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
