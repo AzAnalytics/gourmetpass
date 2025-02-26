@@ -27,7 +27,7 @@ void main() async {
 
   // ✅ Configuration de Stripe (Remplace par ta clé publique)
   Stripe.publishableKey = "pk_live_51QwIEyCLyuydnuvxjV47QfXWYbnSJoVMhYXYVawB0CP2iow8th22ovO2SwkmItbtNGRkJfiv5XomZFct8UobhdV600mBPkgpqv";
-  await Stripe.instance.applySettings();
+  //await Stripe.instance.applySettings();
 
   debugPrint("✅ Firebase et Stripe sont bien initialisés !");
 

@@ -64,7 +64,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '322460520275',
     projectId: 'gourmet-pass',
     storageBucket: 'gourmet-pass.firebasestorage.app',
-    iosBundleId: 'com.example.gourmetpass',
+    iosBundleId: 'com.azanalytics.gourmetpass',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -73,7 +73,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '322460520275',
     projectId: 'gourmet-pass',
     storageBucket: 'gourmet-pass.firebasestorage.app',
-    iosBundleId: 'com.example.gourmetpass',
+    iosBundleId: 'com.azanalytics.gourmetpass',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
