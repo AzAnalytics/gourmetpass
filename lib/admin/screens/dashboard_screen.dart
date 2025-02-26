@@ -111,8 +111,13 @@ class DashboardScreen extends StatelessWidget {
 
   /// 🔹 Graphique en camembert pour la répartition des utilisateurs
   Widget _buildUserPieChart(UserProvider userProvider) {
-    int adminCount = userProvider.users.where((user) => user.isAdmin).length;
+    int adminCount = userProvider.users
+        .where((user) => (user).isAdmin)
+        .length;
+
     int userCount = userProvider.users.length - adminCount;
+
+
 
     return PieChart(
       PieChartData(
@@ -135,4 +140,6 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
+
+
 }

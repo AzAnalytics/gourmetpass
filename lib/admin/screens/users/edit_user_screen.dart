@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:gourmetpass/models/user_model.dart';
 import 'package:gourmetpass/providers/user_provider.dart';
-import 'package:provider/provider.dart';
 
 class EditUserScreen extends StatefulWidget {
-  final User user;
+  final UserModel user;
 
   const EditUserScreen({super.key, required this.user});
 
@@ -13,72 +13,117 @@ class EditUserScreen extends StatefulWidget {
 }
 
 class _EditUserScreenState extends State<EditUserScreen> {
-  late TextEditingController nameController;
-  late TextEditingController emailController;
-  bool isAdmin = false;
-  bool isActive = false;
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _nameController;
+  late TextEditingController _emailController;
+  String _selectedRole = 'user';
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    nameController = TextEditingController(text: widget.user.name);
-    emailController = TextEditingController(text: widget.user.email);
-    isAdmin = widget.user.isAdmin;
-    isActive = widget.user.isActive;
+    _nameController = TextEditingController(text: widget.user.displayName);
+    _emailController = TextEditingController(text: widget.user.email);
+    _selectedRole = widget.user.role;
   }
 
   @override
   void dispose() {
-    nameController.dispose();
-    emailController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> _updateUser() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final updatedUser = widget.user.copyWith(
+        displayName: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        role: _selectedRole,
+      );
+
+      await userProvider.updateUser(updatedUser);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("✅ Utilisateur mis à jour avec succès !"),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("❌ Erreur lors de la mise à jour : $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Modifier un utilisateur')),
+      appBar: AppBar(
+        title: const Text("Modifier l'utilisateur"),
+        backgroundColor: Colors.orange,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Nom')),
-            TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email')),
-            SwitchListTile(
-              title: const Text('Admin'),
-              value: isAdmin,
-              onChanged: (value) => setState(() => isAdmin = value),
-            ),
-            SwitchListTile(
-              title: const Text('Actif'),
-              value: isActive,
-              onChanged: (value) => setState(() => isActive = value),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () async {
-                final updatedUser = widget.user.copyWith(
-                  name: nameController.text,
-                  email: emailController.text,
-                  isAdmin: isAdmin,
-                  isActive: isActive,
-                );
-
-                await userProvider.updateUser(updatedUser);
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Utilisateur mis à jour avec succès')),
-                );
-
-                // Attendre un court délai pour que le SnackBar soit visible lors des tests.
-                await Future.delayed(const Duration(milliseconds: 500));
-                Navigator.pop(context);
-              },
-              child: const Text('Mettre à jour'),
-            ),
-          ],
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: "Nom d'utilisateur"),
+                validator: (value) =>
+                value!.isEmpty ? "Le nom ne peut pas être vide" : null,
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: "Email"),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) =>
+                value!.isEmpty ? "L'email ne peut pas être vide" : null,
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                value: _selectedRole,
+                items: const [
+                  DropdownMenuItem(value: 'user', child: Text("Utilisateur")),
+                  DropdownMenuItem(value: 'admin', child: Text("Administrateur")),
+                ],
+                onChanged: (value) => setState(() => _selectedRole = value!),
+                decoration: const InputDecoration(labelText: "Rôle"),
+              ),
+              const SizedBox(height: 20),
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton.icon(
+                icon: const Icon(Icons.save),
+                label: const Text("Enregistrer"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                onPressed: _updateUser,
+              ),
+            ],
+          ),
         ),
       ),
     );

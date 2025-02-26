@@ -18,25 +18,27 @@ Future<void> addDocument({
   required Map<String, dynamic> data,
   FirebaseFirestore? firestore,
 }) async {
-  final _firestore = firestore ?? FirebaseFirestore.instance;
+  final firestoreInstance = firestore ?? FirebaseFirestore.instance; // ✅ Correction ici
   try {
-    final docRef = _firestore.collection(collectionPath).doc();
+    final docRef = firestoreInstance.collection(collectionPath).doc();
     await docRef.set(data);
   } catch (e) {
     rethrow;
   }
 }
 
+
 /// Supprimer un document de Firestore
 Future<void> deleteDocument(
     String path, {
       FirebaseFirestore? firestore,
     }) async {
-  final _firestore = firestore ?? FirebaseFirestore.instance;
+  final firestoreInstance = firestore ?? FirebaseFirestore.instance; // ✅ Correction ici
   try {
-    final docRef = _firestore.doc(path);
+    final docRef = firestoreInstance.doc(path);
     await docRef.delete();
   } catch (e) {
     rethrow;
   }
 }
+

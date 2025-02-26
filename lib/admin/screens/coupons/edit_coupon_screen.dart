@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:gourmetpass/providers/coupon_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:gourmetpass/providers/coupon_provider.dart';
 import 'package:gourmetpass/models/coupon_model.dart';
 
 class EditCouponScreen extends StatefulWidget {
-  final Coupon coupon;
+  final CouponModel coupon;
 
   const EditCouponScreen({super.key, required this.coupon});
 
@@ -17,6 +17,7 @@ class _EditCouponScreenState extends State<EditCouponScreen> {
   late TextEditingController descriptionController;
   late TextEditingController discountController;
   late TextEditingController maxPeopleController;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -28,20 +29,59 @@ class _EditCouponScreenState extends State<EditCouponScreen> {
 
   @override
   void dispose() {
-    // Libération des contrôleurs pour éviter les fuites de mémoire
     descriptionController.dispose();
     discountController.dispose();
     maxPeopleController.dispose();
     super.dispose();
   }
 
+  Future<void> _updateCoupon() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    final couponProvider = Provider.of<CouponProvider>(context, listen: false);
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    try {
+      final updatedCoupon = widget.coupon.copyWith(
+        description: descriptionController.text.trim(),
+        discountPercentage: int.parse(discountController.text.trim()),
+        maxPeople: int.parse(maxPeopleController.text.trim()),
+      );
+
+      await couponProvider.updateCoupon(updatedCoupon);
+
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text("✅ Coupon mis à jour avec succès !"),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (navigator.canPop()) navigator.pop();
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text("❌ Erreur : ${e.toString()}"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final couponProvider = Provider.of<CouponProvider>(context, listen: false);
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Modifier le Coupon'),
+        title: const Text("Modifier le Coupon"),
+        backgroundColor: Colors.orange,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -50,82 +90,51 @@ class _EditCouponScreenState extends State<EditCouponScreen> {
           child: Column(
             children: [
               TextFormField(
-                key: const Key('edit_coupon_description'), // ✅ Ajout de clé pour le test
                 controller: descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Veuillez entrer une description';
-                  }
-                  return null;
-                },
+                decoration: const InputDecoration(labelText: "Description du coupon"),
+                validator: (value) => value == null || value.isEmpty ? "Ce champ est requis" : null,
               ),
+              const SizedBox(height: 10),
               TextFormField(
-                key: const Key('edit_coupon_discount'), // ✅ Ajout de clé pour le test
                 controller: discountController,
-                decoration: const InputDecoration(labelText: 'Pourcentage de réduction'),
+                decoration: const InputDecoration(labelText: "Pourcentage de réduction"),
                 keyboardType: TextInputType.number,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Veuillez entrer un pourcentage';
-                  }
-                  if (int.tryParse(value) == null) {
-                    return 'Veuillez entrer un nombre valide';
+                  if (value == null || value.isEmpty) return "Ce champ est requis";
+                  final parsedValue = int.tryParse(value);
+                  if (parsedValue == null || parsedValue <= 0 || parsedValue > 100) {
+                    return "Entrez une valeur entre 1 et 100";
                   }
                   return null;
                 },
               ),
+              const SizedBox(height: 10),
               TextFormField(
-                key: const Key('edit_coupon_max_people'), // ✅ Ajout de clé pour le test
                 controller: maxPeopleController,
-                decoration: const InputDecoration(labelText: 'Nombre maximum de personnes'),
+                decoration: const InputDecoration(labelText: "Nombre maximal de personnes"),
                 keyboardType: TextInputType.number,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Veuillez entrer un nombre de personnes';
-                  }
-                  if (int.tryParse(value) == null) {
-                    return 'Veuillez entrer un nombre valide';
+                  if (value == null || value.isEmpty) return "Ce champ est requis";
+                  final parsedValue = int.tryParse(value);
+                  if (parsedValue == null || parsedValue <= 0) {
+                    return "Entrez une valeur valide";
                   }
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                key: const Key('update_coupon_button'), // ✅ Ajout de clé pour le test
-                onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    final updatedCoupon = widget.coupon.copyWith(
-                      description: descriptionController.text,
-                      discountPercentage: int.parse(discountController.text),
-                      maxPeople: int.parse(maxPeopleController.text),
-                    );
-
-                    await couponProvider.updateCoupon(updatedCoupon);
-
-                    if (!context.mounted) return;
-
-                    debugPrint('✅ SnackBar affiché après mise à jour'); // ✅ Ajout du print pour voir si le SnackBar est bien appelé
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        key: Key('coupon_update_success_snackbar'), // ✅ Ajout de la clé pour le test
-                        content: Text('Coupon mis à jour avec succès'),
-                      ),
-                    );
-                    debugPrint("✅ SnackBar affiché après mise à jour"); // 🔹 Ajoute ceci
-
-                    await Future.delayed(const Duration(milliseconds: 500)); // Délai pour laisser le temps au SnackBar d’apparaître
-                    if (!context.mounted) return;
-                    if (Navigator.canPop(context)) {
-                      Navigator.pop(context);
-                    }
-
-                  }
-                },
-                child: const Text('Mettre à jour'),
+              const SizedBox(height: 20),
+              _isLoading
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton.icon(
+                icon: const Icon(Icons.save),
+                label: const Text("Enregistrer les modifications"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                onPressed: _updateCoupon,
               ),
-
             ],
           ),
         ),

@@ -1,66 +1,72 @@
-class User {
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class UserModel {
   final String id;
-  final String name;
-  final String email;
   final String displayName;
-  final bool isAdmin;
+  final String email;
+  final String role;
+  final DateTime? subscriptionExpiresAt;
   final bool isActive;
 
-  const User({
+  /// ✅ Vérifie si l'utilisateur est administrateur
+  bool get isAdmin => role.toLowerCase() == "admin";
+
+  /// ✅ Vérifie si l'utilisateur a un abonnement valide
+  bool get hasValidSubscription =>
+      subscriptionExpiresAt != null && subscriptionExpiresAt!.isAfter(DateTime.now());
+
+  UserModel({
     required this.id,
-    required this.name,
-    required this.email,
     required this.displayName,
-    required this.isAdmin,
+    required this.email,
+    required this.role,
+    this.subscriptionExpiresAt,
     required this.isActive,
   });
 
-  /// 🔹 Convertir les données Firestore en instance de `User`
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'] as String? ?? '', // ✅ Ajout d'une valeur par défaut
-      name: json['name'] as String? ?? json['displayName'] ?? '', // ✅ Fallback sur displayName
-      email: json['email'] as String? ?? '',
-      displayName: json['displayName'] as String? ?? '',
-      isAdmin: json['isAdmin'] as bool? ?? false,
-      isActive: json['isActive'] as bool? ?? true,
+  /// 🔹 Convertir un document Firestore en objet `UserModel`
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json['id'] as String,
+      displayName: json['displayName'] as String? ?? "Utilisateur",
+      email: json['email'] as String? ?? "Inconnu",
+      role: json['role'] as String? ?? "user", // ✅ Assure une valeur par défaut
+      subscriptionExpiresAt: json['subscriptionExpiresAt'] != null
+          ? (json['subscriptionExpiresAt'] as Timestamp).toDate()
+          : null,
+      isActive: json['isActive'] as bool? ?? true, // ✅ Par défaut, actif
     );
   }
 
-  /// 🔹 Convertir une instance `User` en format JSON pour Firestore
+  /// 🔹 Convertir un objet `UserModel` en Map pour Firestore
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'name': name,
-      'email': email,
-      'displayName': displayName,
-      'isAdmin': isAdmin,
-      'isActive': isActive,
+      "id": id,
+      "displayName": displayName,
+      "email": email,
+      "role": role,
+      "subscriptionExpiresAt":
+      subscriptionExpiresAt != null ? Timestamp.fromDate(subscriptionExpiresAt!) : null,
+      "isActive": isActive,
     };
   }
 
-  /// 🔹 Créer une nouvelle instance avec des valeurs modifiées
-  User copyWith({
+  /// 🔹 Créer une copie de l'utilisateur avec des valeurs modifiées
+  UserModel copyWith({
     String? id,
-    String? name,
-    String? email,
     String? displayName,
-    bool? isAdmin,
+    String? email,
+    String? role,
+    DateTime? subscriptionExpiresAt,
     bool? isActive,
   }) {
-    return User(
+    return UserModel(
       id: id ?? this.id,
-      name: name ?? this.name,
-      email: email ?? this.email,
       displayName: displayName ?? this.displayName,
-      isAdmin: isAdmin ?? this.isAdmin,
+      email: email ?? this.email,
+      role: role ?? this.role,
+      subscriptionExpiresAt: subscriptionExpiresAt ?? this.subscriptionExpiresAt,
       isActive: isActive ?? this.isActive,
     );
-  }
-
-  /// 🔹 Vérifier si le pseudo est valide (3 à 20 caractères, lettres, chiffres, _ . -)
-  static bool isValidDisplayName(String displayName) {
-    final validPseudoRegex = RegExp(r'^[a-zA-Z0-9._-]{3,20}$');
-    return validPseudoRegex.hasMatch(displayName);
   }
 }

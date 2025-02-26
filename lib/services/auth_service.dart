@@ -1,52 +1,79 @@
-import 'package:firebase_auth/firebase_auth.dart' as fbAuth;
-import 'package:gourmetpass/models/user_model.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/user_model.dart';
 
-abstract class AuthService {
-  Future<User?> getCurrentUser();
-  Future<User?> login(String email, String password);
-  Future<User?> signup(String email, String password, String displayName);
-  Future<void> logout();
-}
+class AuthService {
+  final fb_auth.FirebaseAuth _auth = fb_auth.FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-class RealAuthService implements AuthService {
-  final fbAuth.FirebaseAuth _firebaseAuth;
+  /// 🔹 Récupérer l'utilisateur actuellement connecté
+  Future<UserModel?> getCurrentUser() async {
+    final fb_auth.User? firebaseUser = _auth.currentUser;
+    if (firebaseUser == null) return null;
 
-  RealAuthService({fbAuth.FirebaseAuth? firebaseAuth})
-      : _firebaseAuth = firebaseAuth ?? fbAuth.FirebaseAuth.instance;
+    final DocumentSnapshot userDoc =
+    await _firestore.collection('users').doc(firebaseUser.uid).get();
 
-  @override
-  Future<User?> getCurrentUser() async {
-    final fbUser = _firebaseAuth.currentUser;
-    return fbUser != null ? _userFromFirebaseUser(fbUser) : null;
+    if (!userDoc.exists) return null;
+
+    return UserModel.fromJson(userDoc.data() as Map<String, dynamic>);
   }
 
-  @override
-  Future<User?> login(String email, String password) async {
-    final credential = await _firebaseAuth.signInWithEmailAndPassword(email: email, password: password);
-    return _userFromFirebaseUser(credential.user!);
+  /// 🔹 Connexion utilisateur
+  Future<UserModel?> login(String email, String password) async {
+    try {
+      final fb_auth.UserCredential result = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final fb_auth.User? firebaseUser = result.user;
+      if (firebaseUser == null) return null;
+
+      final DocumentSnapshot userDoc =
+      await _firestore.collection('users').doc(firebaseUser.uid).get();
+
+      if (!userDoc.exists) return null;
+
+      return UserModel.fromJson(userDoc.data() as Map<String, dynamic>);
+    } catch (e) {
+      throw Exception("❌ Erreur de connexion : $e");
+    }
   }
 
-  @override
-  Future<User?> signup(String email, String password, String displayName) async {
-    final credential = await _firebaseAuth.createUserWithEmailAndPassword(email: email, password: password);
-    await credential.user?.updateDisplayName(displayName);
-    await credential.user?.reload();
-    return _userFromFirebaseUser(_firebaseAuth.currentUser!);
+  /// 🔹 Inscription utilisateur avec abonnement
+  Future<UserModel?> signup(
+      String email,
+      String password,
+      String displayName,
+      DateTime? subscriptionExpiresAt,
+      ) async {
+    try {
+      final fb_auth.UserCredential result =
+      await _auth.createUserWithEmailAndPassword(email: email, password: password);
+
+      final fb_auth.User? firebaseUser = result.user;
+      if (firebaseUser == null) return null;
+
+      final newUser = UserModel( // ✅ Correction ici (remplacement de `User` par `UserModel`)
+        id: firebaseUser.uid,
+        email: email,
+        displayName: displayName,
+        role: 'user', // 🔹 Par défaut, rôle utilisateur normal
+        subscriptionExpiresAt: subscriptionExpiresAt,
+        isActive: true, // 🔹 Par défaut, actif
+      );
+
+      await _firestore.collection('users').doc(firebaseUser.uid).set(newUser.toJson());
+
+      return newUser;
+    } catch (e) {
+      throw Exception("❌ Erreur d'inscription : $e");
+    }
   }
 
-  @override
+  /// 🔹 Déconnexion utilisateur
   Future<void> logout() async {
-    await _firebaseAuth.signOut();
-  }
-
-  User _userFromFirebaseUser(fbAuth.User firebaseUser) {
-    return User(
-      id: firebaseUser.uid,
-      name: firebaseUser.displayName ?? '',
-      email: firebaseUser.email ?? '',
-      displayName: firebaseUser.displayName ?? '',
-      isAdmin: false,
-      isActive: true,
-    );
+    await _auth.signOut();
   }
 }

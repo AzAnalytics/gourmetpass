@@ -1,31 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:gourmetpass/providers/user_provider.dart';
-import 'edit_user_screen.dart';
+import '../providers/coupon_provider.dart';
+import '../providers/user_provider.dart';
 
-class ListUsersScreen extends StatelessWidget {
-  const ListUsersScreen({super.key});
+class MyCouponsScreen extends StatelessWidget {
+  const MyCouponsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
+    final couponProvider = Provider.of<CouponProvider>(context);
+    final user = userProvider.user;
+
+    final bool hasSubscription = user?.hasValidSubscription ?? false;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Gestion des utilisateurs"),
+        title: const Text("Mes Coupons"),
         backgroundColor: Colors.orange,
       ),
-      body: FutureBuilder(
-        future: userProvider.fetchUsers(),
+      body: hasSubscription
+          ? FutureBuilder(
+        future: couponProvider.fetchUserCoupons(user!.id),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (userProvider.users.isEmpty) {
+          if (couponProvider.coupons.isEmpty) {
             return const Center(
               child: Text(
-                "Aucun utilisateur trouvé.",
+                "Vous n'avez aucun coupon actif pour le moment.",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),
             );
@@ -33,9 +38,9 @@ class ListUsersScreen extends StatelessWidget {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: userProvider.users.length,
+            itemCount: couponProvider.coupons.length,
             itemBuilder: (context, index) {
-              final user = userProvider.users[index];
+              final coupon = couponProvider.coupons[index];
 
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 8),
@@ -47,32 +52,28 @@ class ListUsersScreen extends StatelessWidget {
                   contentPadding: const EdgeInsets.all(12),
                   leading: CircleAvatar(
                     backgroundColor: Colors.orange.shade100,
-                    child: const Icon(Icons.person, color: Colors.orange),
+                    child: const Icon(Icons.local_offer, color: Colors.orange),
                   ),
                   title: Text(
-                    user.displayName,
+                    coupon.description,
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
-                    "Rôle: ${user.role} | Abonnement: ${user.hasValidSubscription ? "✅ Actif" : "❌ Expiré"}",
+                    "${coupon.discountPercentage}% de réduction",
                     style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.blue),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EditUserScreen(user: user),
-                        ),
-                      );
-                    },
                   ),
                 ),
               );
             },
           );
         },
+      )
+          : const Center(
+        child: Text(
+          "Vous devez avoir un abonnement actif pour voir vos coupons.",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.red),
+          textAlign: TextAlign.center,
+        ),
       ),
     );
   }

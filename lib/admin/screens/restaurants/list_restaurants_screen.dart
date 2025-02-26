@@ -1,71 +1,94 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gourmetpass/providers/restaurant_provider.dart';
-import 'add_restaurant_screen.dart';
-import 'edit_restaurant_screen.dart';
+import 'package:gourmetpass/admin/screens/restaurants/edit_restaurant_screen.dart';
+import 'package:gourmetpass/admin/screens/restaurants/delete_restaurant_screen.dart';
 
 class ListRestaurantsScreen extends StatelessWidget {
   const ListRestaurantsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final adminRestaurantProvider = Provider.of<RestaurantProvider>(context);
+    final restaurantProvider = Provider.of<RestaurantProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Liste des Restaurants'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AddRestaurantScreen()),
-              );
-            },
-          ),
-        ],
+        title: const Text("Liste des Restaurants"),
+        backgroundColor: Colors.orange,
       ),
-      body: adminRestaurantProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : adminRestaurantProvider.restaurants.isEmpty
-          ? const Center(child: Text('Aucun restaurant disponible.'))
-          : ListView.builder(
-        itemCount: adminRestaurantProvider.restaurants.length,
-        itemBuilder: (context, index) {
-          final restaurant = adminRestaurantProvider.restaurants[index];
-          return ListTile(
-            title: Text(restaurant.name),
-            subtitle: Text(restaurant.cuisineType),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => EditRestaurantScreen(restaurant: restaurant),
-                      ),
-                    );
-                  },
+      body: FutureBuilder(
+        future: restaurantProvider.fetchRestaurants(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (restaurantProvider.restaurants.isEmpty) {
+            return const Center(
+              child: Text(
+                "Aucun restaurant disponible.",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(10),
+            itemCount: restaurantProvider.restaurants.length,
+            itemBuilder: (context, index) {
+              final restaurant = restaurantProvider.restaurants[index];
+
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () async {
-                    await adminRestaurantProvider.deleteRestaurant(restaurant.id);
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(12),
+                  leading: CircleAvatar(
+                    backgroundImage: restaurant.salles.isNotEmpty
+                        ? NetworkImage(restaurant.salles.first) // ✅ Prend la première image de la salle
+                        : null,
+                    backgroundColor: Colors.orange.shade100,
+                    child: restaurant.salles.isEmpty
+                        ? const Icon(Icons.image, color: Colors.orange) // 🔹 Icône si pas d'image
+                        : null,
+                  ),
+                  title: Text(
+                    restaurant.name,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(restaurant.address),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EditRestaurantScreen(restaurant: restaurant),
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => DeleteRestaurantScreen(restaurant: restaurant),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
 
-                    if (!context.mounted) return; // Vérifie si le widget est toujours monté
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Restaurant "${restaurant.name}" supprimé.')),
-                    );
-                  },
-                )
-                ,
-              ],
-            ),
+            },
           );
         },
       ),

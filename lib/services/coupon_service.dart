@@ -5,7 +5,7 @@ class CouponService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Récupérer les coupons pour un restaurant spécifique
-  Future<List<Coupon>> fetchCoupons(String restaurantId) async {
+  Future<List<CouponModel>> fetchCoupons(String restaurantId) async {
     try {
       final QuerySnapshot snapshot = await _firestore
           .collection('restaurants')
@@ -14,7 +14,7 @@ class CouponService {
           .get();
 
       return snapshot.docs.map((doc) {
-        return Coupon.fromJson(doc.data() as Map<String, dynamic>);
+        return CouponModel.fromJson(doc.data() as Map<String, dynamic>);
       }).toList();
     } catch (e) {
       throw Exception('Erreur lors de la récupération des coupons : $e');
@@ -51,7 +51,7 @@ class CouponService {
   }
 
   /// Ajouter un coupon (fonctionnalité facultative)
-  Future<void> addCoupon(String restaurantId, Coupon coupon) async {
+  Future<void> addCoupon(String restaurantId, CouponModel coupon) async {
     try {
       final DocumentReference couponRef = _firestore
           .collection('restaurants')

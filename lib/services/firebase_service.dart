@@ -1,7 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+/*import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/restaurant_model.dart';
 import '../models/coupon_model.dart';
-import '../utils/constants.dart';
 
 
 class FirebaseService {
@@ -11,7 +10,7 @@ class FirebaseService {
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   /// 🔹 **Récupérer tous les restaurants**
-  Future<List<Restaurant>> fetchRestaurants() async {
+  Future<List<RestaurantModel>> fetchRestaurants() async {
     try {
       final QuerySnapshot snapshot = await _firestore.collection('restaurants').get();
       return snapshot.docs.map((doc) => Restaurant.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -105,4 +104,4 @@ class FirebaseService {
       throw Exception('❌ Erreur lors de la suppression du restaurant : $e');
     }
   }
-}
+}*/
