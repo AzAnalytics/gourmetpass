@@ -1,4 +1,4 @@
-package com.example.gourmetpass
+package com.azanalytics.gourmetpass
 
 import io.flutter.embedding.android.FlutterActivity
 
